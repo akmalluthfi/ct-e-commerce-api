@@ -3,8 +3,10 @@
 namespace Api;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Api\Api;
 use Api\Customer;
+use Exception;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
@@ -51,10 +53,49 @@ class CustomerController extends Controller
     if ($request->param('param') === 'login') {
       if ($request->isPOST()) return $this->login($request);
     }
+
+    // cek apakah param berisi logout
+    if ($request->param('param') === 'logout') {
+      if ($request->isGET()) return $this->logout($request);
+    }
   }
 
-  public function logout()
+  public function logout(HTTPRequest $request)
   {
+    // cek apakah ada access token di header
+    if (is_null($jwt = $request->getHeader('access-token'))) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 401,
+      'message' => "Unauthorized",
+    ]));
+
+    try {
+      // ambil informasi yang ada diheader 
+      $decoded = JWT::decode($jwt, new Key(Environment::getEnv('SECRET_KEY'), Environment::getEnv('ALG')));
+    } catch (Exception $e) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 403,
+        'message' => $e->getMessage(),
+      ]));
+    }
+
+    // cek apakah user masih login 
+    $isLogin = Token::get()->filter('MemberID', $decoded->id)->first();
+    if (is_null($isLogin)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => "User not login",
+    ]));
+
+    // jika belum login 
+    // hapus token 
+    $isLogin->delete();
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => "user logged out successfully",
+    ]));
   }
 
   public function login(HTTPRequest $request)
@@ -102,7 +143,7 @@ class CustomerController extends Controller
       'email' => $customers->Email
     ];
 
-    $jwt = JWT::encode($payload, Environment::getEnv('SECRET_KEY'), 'HS256');
+    $jwt = JWT::encode($payload, Environment::getEnv('SECRET_KEY'), Environment::getEnv('ALG'));
 
     // lalu tambahkan token tersebut ke database 
     $token = Token::create();
