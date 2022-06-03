@@ -58,6 +58,11 @@ class CustomerController extends Controller
     if ($request->param('param') === 'logout') {
       if ($request->isGET()) return $this->logout($request);
     }
+
+    // cek apakah param berisi forget-password
+    if ($request->param('param') === 'forget-password') {
+      if ($request->isGET()) return $this->forget_password($request);
+    }
   }
 
   public function logout(HTTPRequest $request)
@@ -182,14 +187,21 @@ class CustomerController extends Controller
     ]));
 
     // cek apakah email sudah tersedia di database 
-    $customers = Customer::get()->filter('Email', $email);
+    $customer = Customer::get()->filter('Email', $email)->first();
 
-    // jika ada jangan diperbolehkan 
-    if ($customers->exists()) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 409,
-      'message' => "User Already exists",
-    ]));
+    // jika ada
+    if (!is_null($customer)) {
+      //  cek apakah user sudah divalidate
+      // jika sudah  
+      if ($customer->isValidated === 1) return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 409,
+        'message' => "User Already exists",
+      ]));
+
+      // kalau belum 
+      $customer->delete();
+    }
 
     // jika sudah tambahkan ke database
     $newCustomer = Customer::create();
