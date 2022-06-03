@@ -2,10 +2,11 @@
 
 namespace Api;
 
-use Api;
-use SilverStripe\ORM\ValidationException;
+use Api\Api;
+use Api\Customer;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\ORM\ValidationException;
 
 class CustomerController extends Controller
 {
@@ -68,24 +69,33 @@ class CustomerController extends Controller
     // jika ada jangan diperbolehkan 
     if ($customers->exists()) return $this->getResponse()->setBody(json_encode([
       'success' => false,
-      'code' => 401,
-      'message' => "Unauthorized",
+      'code' => 409,
+      'message' => "User Already exists",
     ]));
 
     // jika sudah tambahkan ke database
     $newCustomer = Customer::create();
     $newCustomer->Email = $email;
     $newCustomer->Password = $password;
+    $newCustomer->isValidated = false;
 
     try {
       $newCustomer->write();
     } catch (ValidationException $e) {
       return $this->getResponse()->setBody(json_encode([
         'success' => false,
-        'code' => $e->getCode(),
+        'code' => 400,
         'message' => $e->getMessage()
       ]));
     }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'success create new customer'
+    ]));
+
+    // ! Kurang kirim email 
 
     // jika berhasil menambahkan user 
     // kirim email verifiy 

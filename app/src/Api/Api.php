@@ -1,5 +1,7 @@
 <?php
 
+namespace Api;
+
 use SilverStripe\ORM\DataObject;
 
 class Api extends DataObject
