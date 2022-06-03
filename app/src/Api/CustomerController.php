@@ -2,11 +2,15 @@
 
 namespace Api;
 
+use Firebase\JWT\JWT;
 use Api\Api;
 use Api\Customer;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\Security\MemberAuthenticator\MemberAuthenticator;
+use Token;
 
 class CustomerController extends Controller
 {
@@ -45,9 +49,82 @@ class CustomerController extends Controller
 
     // cek apakah param berisi login
     if ($request->param('param') === 'login') {
-      var_dump('user login');
-      return;
+      if ($request->isPOST()) return $this->login($request);
     }
+  }
+
+  public function logout()
+  {
+  }
+
+  public function login(HTTPRequest $request)
+  {
+    // ambil param body 
+    $email = $request->postVar('email');
+    $password = $request->postVar('password');
+
+    // cek apakah param ada 
+    if (is_null($email) || is_null($password)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => "request cannot be accepted, parameter required",
+    ]));
+
+    // cek apakah email sudah tersedia di database 
+    $customers = Customer::get()->filter('Email', $email)->first();
+    if (is_null($customers)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => "User Not Found",
+    ]));
+
+    // cek password 
+    $auth = new MemberAuthenticator;
+    $result = $auth->checkPassword($customers, $password);
+
+    if (!$result->isValid()) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 403,
+      'message' => $result->getMessages()[0]['message']
+    ]));
+
+    // cek apakah memberid sudah tersedia, cegat 
+    $token = Token::get()->filter('MemberID', $customers->ID)->first();
+    if (!is_null($token)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => 'user is still logged in'
+    ]));
+
+    // jika password benar buat token 
+    $payload = [
+      'id' => $customers->ID,
+      'email' => $customers->Email
+    ];
+
+    $jwt = JWT::encode($payload, Environment::getEnv('SECRET_KEY'), 'HS256');
+
+    // lalu tambahkan token tersebut ke database 
+    $token = Token::create();
+    $token->MemberID = $customers->ID;
+    $token->Token = $jwt;
+
+    try {
+      $token->write();
+    } catch (ValidationException $e) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 400,
+        'message' => $e->getMessage()
+      ]));
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'login success',
+      'access_token' => $jwt
+    ]));
   }
 
   public function register(HTTPRequest $request)
