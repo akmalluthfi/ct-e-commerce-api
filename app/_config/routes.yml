@@ -1,9 +1,10 @@
 ---
 Name: approutes
 After:
-  - "#rootroutes"
-  - "#coreroutes"
+  - '#rootroutes'
+  - '#coreroutes'
 ---
 SilverStripe\Control\Director:
   rules:
-    "api/customers/$param": 'Api\CustomerController'
+    'api/customers/$param': 'Api\CustomerController'
+    'api/test': 'Api\TestController'

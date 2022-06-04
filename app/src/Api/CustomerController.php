@@ -63,6 +63,32 @@ class CustomerController extends Controller
     if ($request->param('param') === 'forget-password') {
       if ($request->isGET()) return $this->forget_password($request);
     }
+
+    // cek apakah param berisi validate 
+    if ($request->param('param') === 'validate') {
+      if ($request->isPOST()) return $this->validate($request);
+    }
+  }
+
+  public function validate(HTTPRequest $request)
+  {
+    // ambil param body 
+    $isValidOtp = $request->postVar('otp');
+
+    // cek apakah otp tersebut ada didatabase 
+    $otp = OTP::get()->filter('OTP', $isValidOtp)->first();
+
+    // jika otp tidak ada 
+    if (is_null($otp)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 409,
+      'message' => "User Already exists",
+    ]));
+
+    // cek apakah otp sudah expired
+
+    var_dump($otp);
+    die();
   }
 
   public function logout(HTTPRequest $request)
@@ -219,15 +245,24 @@ class CustomerController extends Controller
       ]));
     }
 
+    // buat otp dengan lama waktu 3 menit setelah user didapatkan 
+    $createdTime = strtotime($newCustomer->Created);
+    $expired = date('Y-m-d H:i:s', strtotime('+3 minutes', $createdTime));
+
+    $otp = OTP::create();
+    $otp->OTP = random_int(100000, 999999);
+    $otp->MemberID = $newCustomer->ID;
+    $otp->Expired = $expired;
+    $otp->write();
+
+    // ! 
+    // jika berhasil menambahkan user  dan membuat otp 
+    // kirim email validate yang berisi otp tersebut 
+
     return $this->getResponse()->setBody(json_encode([
       'success' => true,
       'code' => 200,
       'message' => 'success create new customer'
     ]));
-
-    // ! Kurang kirim email 
-
-    // jika berhasil menambahkan user 
-    // kirim email verifiy 
   }
 }
