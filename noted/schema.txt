@@ -1,0 +1,32 @@
+Schema Class 
+Customer: {
+  photo profile 
+  has many cart
+}
+
+cart : {
+  product id 
+  customer id
+}
+
+order : {
+  id
+  has many cart
+}
+
+Merchant : {
+  Photo profile 
+  has one category 
+  has many product 
+}
+
+category : {
+  title 
+  has many merchant
+}
+
+product : {
+  title
+  price 
+  has many image 
+}

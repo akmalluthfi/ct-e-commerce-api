@@ -12,6 +12,6 @@ SilverStripe\Core\Injector\Injector:
       Port: 587
       Encryption: tls
     calls:
-      Username: [setUsername, ['mrx191204@gmail.com']]
-      Password: [setPassword, ['zmkkucbaoqbckzox']]
+      Username: [setUsername, ['`APP_SMTP_USERNAME`']]
+      Password: [setPassword, ['`APP_SMTP_PASSWORD`']]
       AuthMode: [setAuthMode, ['login']]
