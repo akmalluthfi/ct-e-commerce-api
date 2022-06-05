@@ -31,5 +31,6 @@
   <div class="error">
     <div>404 | Not Found</div>
   </div>
+  $Layout
 </body>
 </html>

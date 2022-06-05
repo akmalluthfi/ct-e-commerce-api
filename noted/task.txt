@@ -1,7 +1,9 @@
 buat validate saat user berhasil register 
 
-user register 
-cek apakah data sudah tersedia didatabase, 
+user register menggunakan link di email 
+// algoritma
+user register
+cek apakah email sudah tersedia didatabase, 
   jika belum maka register seperti semula
   kirimkan email berisi link untuk membuat email tersebut tervalidasi
 
@@ -13,7 +15,7 @@ cek apakah data sudah tersedia didatabase,
     jika sudah divalidasi tolak 
 
 
-user verify-token 
+user verify link berisi hash random 
 lalu buat verify token dan beri waktu 10 menit untuk verify, 
 jika tombol tersebut ditekan, 
   consume api untuk mengubah email menjadi validate
@@ -33,9 +35,42 @@ cek apakah verify-token ada
     ubah validate user dari false menjadi true
 
 
+###########
+user register 
+  -> not exist
+    -> add to database, set is validate to false
+    -> create link, berisi hash dan id user 
+    -> create email berisi link tersebut 
+  -> cek if email exists
+    -> cek if email validate 
+      -> return false
+    -> if email not validate
+      -> delete user
+      -> add to database, set validate to false 
+      -> create link, berisi hash dan id user 
+      -> create email berisi link tersebut
+
+email verify
+-> cek is hash exist in database
+  -> cek apakah sudah expired 
+    -> jika sudah 
+      tampilkan ke halaman bahwa url sudah invalid 
+    -> jika belum
+      tambah data ke database 
+      tampilkan ke halaman bahwa akun selesai diregistrasi silahkan login
+
+
+kebutuhan api 
+/api/customers/register => untuk customer register pertama kali 
+/api/customers/verifiy => untuk customer verify, (juga sebagai link yang ditanam di tombol yang dikirim lewat email)
+
+kebutuhan halaman 
+halaman untuk email 
+page yang ditampilkan setelah email berhasil ditekan
+
 
 ############################################################
-api register
+api register otp
 1. User register 
   cek apakah ada user dengan email yang sama
     jika tidak
@@ -79,12 +114,3 @@ OTP
 db = [
   'MemberID' , 'OTP'
 ]; 
-
-#############
-User register 
--> create otp (exp 3mins)
--> send otp in gmail 
-
-User Validate otp 
--> check otp in database 
-  -> if exists create 

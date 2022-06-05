@@ -8,6 +8,7 @@ use Api\Api;
 use Api\Customer;
 use Exception;
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\Email\Email;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ValidationException;
@@ -70,27 +71,6 @@ class CustomerController extends Controller
     }
   }
 
-  public function validate(HTTPRequest $request)
-  {
-    // ambil param body 
-    $isValidOtp = $request->postVar('otp');
-
-    // cek apakah otp tersebut ada didatabase 
-    $otp = OTP::get()->filter('OTP', $isValidOtp)->first();
-
-    // jika otp tidak ada 
-    if (is_null($otp)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 409,
-      'message' => "User Already exists",
-    ]));
-
-    // cek apakah otp sudah expired
-
-    var_dump($otp);
-    die();
-  }
-
   public function logout(HTTPRequest $request)
   {
     // cek apakah ada access token di header
@@ -148,6 +128,13 @@ class CustomerController extends Controller
       'success' => false,
       'code' => 404,
       'message' => "User Not Found",
+    ]));
+
+    // cek apakah sudah divalidasi 
+    if ($customers->isValidated === 0) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 403,
+      'message' => "Validation required",
     ]));
 
     // cek password 
@@ -222,7 +209,7 @@ class CustomerController extends Controller
       if ($customer->isValidated === 1) return $this->getResponse()->setBody(json_encode([
         'success' => false,
         'code' => 409,
-        'message' => "User Already exists",
+        'message' => "Customers Already exists",
       ]));
 
       // kalau belum 
@@ -237,6 +224,20 @@ class CustomerController extends Controller
 
     try {
       $newCustomer->write();
+
+      // buat lama expired token selama 10 menit
+      $createdTime = strtotime($newCustomer->Created);
+      $expired = date('Y-m-d H:i:s', strtotime('+10 minutes', $createdTime));
+      // buat token 
+      $token = hash('sha256', rand(0, 1000));
+
+      // masukkan ke database verify 
+      $verify = Verify::create();
+      $verify->Token = $token;
+      $verify->MemberID = $newCustomer->ID;
+      $verify->Expired = $expired;
+
+      $verify->write();
     } catch (ValidationException $e) {
       return $this->getResponse()->setBody(json_encode([
         'success' => false,
@@ -245,24 +246,30 @@ class CustomerController extends Controller
       ]));
     }
 
-    // buat otp dengan lama waktu 3 menit setelah user didapatkan 
-    $createdTime = strtotime($newCustomer->Created);
-    $expired = date('Y-m-d H:i:s', strtotime('+3 minutes', $createdTime));
+    // kirim email 
+    $email = Email::create();
+    $email->setHTMLTemplate('Email\\verify');
+    $email->setData([
+      'link' => 'http://localhost:8080' . BASE_URL . "/api/verify/$token"
+    ]);
+    $email->setFrom('no-reply@admin.com', 'noreply');
+    $email->setTo($newCustomer->Email);
+    $email->setSubject('Verify email address for e-commerce');
 
-    $otp = OTP::create();
-    $otp->OTP = random_int(100000, 999999);
-    $otp->MemberID = $newCustomer->ID;
-    $otp->Expired = $expired;
-    $otp->write();
+    $result = $email->send();
 
-    // ! 
-    // jika berhasil menambahkan user  dan membuat otp 
-    // kirim email validate yang berisi otp tersebut 
+    if ($result !== true) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 500,
+        'message' => 'Something went wrong'
+      ]));
+    }
 
     return $this->getResponse()->setBody(json_encode([
       'success' => true,
       'code' => 200,
-      'message' => 'success create new customer'
+      'message' => 'success create new customer, we send a email verification, please check'
     ]));
   }
 }

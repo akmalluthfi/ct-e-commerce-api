@@ -32,7 +32,7 @@
         "
       >
         <section>
-          <h2>Hello, akmalluthfi!</h2>
+          <h2>Hello!</h2>
           <p>Please click the button below to verify your email addres.</p>
         </section>
         <section style="margin: 40px auto">
@@ -48,7 +48,7 @@
               display: block;
               margin: auto;
             "
-            href=""
+            href="$link"
             >Verify Email Address
           </a>
         </section>

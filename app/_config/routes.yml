@@ -8,3 +8,4 @@ SilverStripe\Control\Director:
   rules:
     'api/customers/$param': 'Api\CustomerController'
     'api/test': 'Api\TestController'
+    'api/verify/$token': 'Api\VerifyController'
