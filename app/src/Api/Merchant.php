@@ -5,7 +5,11 @@ namespace Api;
 use MerchantCategory;
 use Order;
 use Product;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\TabSet;
 use SilverStripe\Security\Member;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\CheckboxField;
 
 class Merchant extends Member
 {
@@ -26,4 +30,19 @@ class Merchant extends Member
     'Products' => Product::class,
     'Orders' => Order::class
   ];
+
+  /**
+   * CMS Fields
+   * @return FieldList
+   */
+  public function getCMSFields()
+  {
+    $fields = FieldList::create(TabSet::create('Root'));
+
+    $fields->addFieldsToTab('Root.Main', [
+      CheckboxField::create('isApproved', 'Approved'),
+    ]);
+
+    return $fields;
+  }
 }

@@ -3,6 +3,7 @@
 namespace Api;
 
 use SilverStripe\Control\Email\Email;
+use SilverStripe\Core\Environment;
 
 class EmailHelper
 {
@@ -45,6 +46,17 @@ class EmailHelper
     $email->setFrom('no-reply@admin.com', 'noreply');
     $email->setTo($to);
     $email->setSubject('Email verification');
+
+    return $email->send();
+  }
+
+  public static function sendEmailApproved()
+  {
+    $email = Email::create();
+    $email->setHTMLTemplate('Email\\email_approved');
+    $email->setFrom('no-reply@admin.com', 'noreply');
+    $email->setTo(Environment::getEnv('ADMIN_EMAIL'));
+    $email->setSubject('New merchants has registered');
 
     return $email->send();
   }
