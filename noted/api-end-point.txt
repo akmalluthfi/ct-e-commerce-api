@@ -1,4 +1,13 @@
-POST /login
-{
+/customers/register -> member/register {role : customer}
+/merchants/register -> member/register {role : merchants}
 
+redirect ke url member/register {role : customer}
+class member {
+  register(){
+  jika role yang dikirim itu customer maka isi role dengan customer
+  dan tambahkan data lewat Model Customer
+  }
 }
+
+
+/customers/profile -> customers::get profile customer 

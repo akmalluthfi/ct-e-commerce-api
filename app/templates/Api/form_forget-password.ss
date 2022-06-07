@@ -30,9 +30,9 @@
     <div class="d-flex vh-100 align-items-center justify-content-center">
       <div class="col col-sm-8 col-md-6 col-lg-5">
         <h3 class="text-center mb-3">Change Your Password</h3>
-        <div class="card shadow-sm mx-4">
+        <div class="card shadow-sm mx-4" id="card">
           <div class="card-body">
-            <form method="post" action="$link">
+            <form method="post" action="$link" id="form">
               <input type="hidden" name="token" value="$token" />
               <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
@@ -70,5 +70,60 @@
       integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy"
       crossorigin="anonymous"
     ></script>
+
+    <script>
+      const form = document.getElementById('form');  
+     
+      form.addEventListener('submit', function(e) {
+        e.preventDefault(); 
+
+        // cek apakah password dan confirmation password sama 
+        const password = document.getElementById('password').value; 
+        const confPassword = document.getElementById('confPassword').value;   
+        const token = document.querySelector('input[type="hidden"]').value;
+
+        const help = document.getElementById('passwordHelp'); 
+
+        if(password.length === 0 || confPassword.length === 0) {
+          help.innerHTML = `<p class="text-center text-danger">Password is too short, it must be 8 or more characters long</p>`
+          return; 
+        }
+
+        if(password === confPassword) {
+          // selain itu kirimkan lewat 
+          changePassword(password, token);
+          return; 
+        } else {
+          help.innerHTML = `<p class="text-center text-danger">The provided details don't seem to be correct. Please try again.</p>`
+          return; 
+        } 
+      });
+
+      const changePassword = async (password, token) => {
+          const response = await fetch('$link', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password, token })
+          });
+
+          const result = await response.json(); 
+
+          const help = document.getElementById('passwordHelp'); 
+
+          if(!result.success) {
+            help.innerHTML = `<p class="text-center text-danger">${result.message}</p>`
+            return;
+          }
+
+          // tampilkan pesan bahwa password berhasil diubah
+          const card = document.getElementById('card'); 
+          card.innerHTML = `<div class="alert alert-success m-0" role="alert">
+            Password Success to change, now you can login.
+          </div>`
+      }
+
+    </script>
   </body>
 </html>

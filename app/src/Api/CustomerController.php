@@ -12,6 +12,7 @@ use SilverStripe\Control\Email\Email;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\MemberAuthenticator\MemberAuthenticator;
 use Token;
 
@@ -20,6 +21,7 @@ class CustomerController extends Controller
   public function init()
   {
     parent::init();
+    $this->getResponse()->addHeader("Content-type", "application/json");
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');
@@ -38,37 +40,110 @@ class CustomerController extends Controller
       'code' => 401,
       'message' => "Unauthorized",
     ]));
-
-    $this->getResponse()->addHeader("Content-type", "application/json");
   }
 
   public function index(HTTPRequest $request)
   {
-    // cek apakah param berisi register
-    if ($request->param('param') === 'register') {
-      // cek apakah dia lewat post 
-      if ($request->isPOST()) return $this->register($request);
+    if (!$request->isPOST()) return $this->httpError(404);
+    $action = $request->param('action');
+
+    if ($action === 'register') return $this->register($request);
+    if ($action === 'login') return $this->login($request);
+    if ($action === 'logout') return $this->logout($request);
+    if ($action === 'forget-password') return $this->forget_password($request);
+    if ($action === 'change-password') return $this->change_password($request);
+    if ($action === 'change-email') return $this->change_email($request);
+
+    return $this->httpError(404);
+  }
+
+  public function change_email(HTTPRequest $request)
+  {
+    // cek apakah 
+  }
+
+  public function change_password(HTTPRequest $request)
+  {
+    // cek apakah password === confirmation password
+    $body = json_decode($request->getBody());
+
+    // cek apakah ada token yang terkirim 
+    $token = Verify::get()->filter('Token', $body->token)->first();
+
+    if (is_null($token)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => "invalid token",
+    ]));
+
+    $member = Member::get_by_id($token->MemberID);
+
+    $member->Password = $body->password;
+
+    try {
+      $member->write();
+    } catch (ValidationException $e) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 400,
+        'message' => $e->getMessage(),
+      ]));
     }
 
-    // cek apakah param berisi login
-    if ($request->param('param') === 'login') {
-      if ($request->isPOST()) return $this->login($request);
+    // hapus token 
+    $token->delete();
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'success change password',
+    ]));
+  }
+
+  public function forget_password(HTTPRequest $request)
+  {
+    // apakah ada email yang dikirim 
+    if (is_null($email = $request->postVar('email'))) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => "request cannot be accepted, parameter required",
+    ]));
+    // ambil email yang dikirim
+    // cek apakah email ada didatabase 
+    $customer = Customer::get()->filter('Email', $email)->first();
+    if (is_null($customer)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => "Email not found",
+    ]));
+
+    // cek apakah customer ini valid 
+    if ($customer->isValidated === 0) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => "request cannot be accepted, user not valid",
+    ]));
+
+    // create and store verify token
+    $current_date = strtotime(date('Y-m-d H:i:s'));
+    $expired = date('Y-m-d H:i:s', strtotime('+3 hours', $current_date));
+    $token = VerifyController::createVerifyToken($expired, $customer->ID);
+
+    $result = EmailHelper::sendEmailForgotPassword($customer->Email, $token);
+
+    if ($result !== true) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 500,
+        'message' => 'Something went wrong'
+      ]));
     }
 
-    // cek apakah param berisi logout
-    if ($request->param('param') === 'logout') {
-      if ($request->isGET()) return $this->logout($request);
-    }
-
-    // cek apakah param berisi forget-password
-    if ($request->param('param') === 'forget-password') {
-      if ($request->isGET()) return $this->forget_password($request);
-    }
-
-    // cek apakah param berisi validate 
-    if ($request->param('param') === 'validate') {
-      if ($request->isPOST()) return $this->validate($request);
-    }
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'success send email verification'
+    ]));
   }
 
   public function logout(HTTPRequest $request)
@@ -147,7 +222,7 @@ class CustomerController extends Controller
       'message' => $result->getMessages()[0]['message']
     ]));
 
-    // cek apakah memberid sudah tersedia, cegat 
+    // cek apakah member id sudah tersedia, cegat 
     $token = Token::get()->filter('MemberID', $customers->ID)->first();
     if (!is_null($token)) return $this->getResponse()->setBody(json_encode([
       'success' => false,
@@ -224,20 +299,8 @@ class CustomerController extends Controller
 
     try {
       $newCustomer->write();
-
-      // buat lama expired token selama 10 menit
-      $createdTime = strtotime($newCustomer->Created);
-      $expired = date('Y-m-d H:i:s', strtotime('+10 minutes', $createdTime));
-      // buat token 
-      $token = hash('sha256', rand(0, 1000));
-
-      // masukkan ke database verify 
-      $verify = Verify::create();
-      $verify->Token = $token;
-      $verify->MemberID = $newCustomer->ID;
-      $verify->Expired = $expired;
-
-      $verify->write();
+      // Buat token
+      $token = TokenController::createToken($newCustomer->Created, $newCustomer->ID);
     } catch (ValidationException $e) {
       return $this->getResponse()->setBody(json_encode([
         'success' => false,
@@ -246,17 +309,7 @@ class CustomerController extends Controller
       ]));
     }
 
-    // kirim email 
-    $email = Email::create();
-    $email->setHTMLTemplate('Email\\verify');
-    $email->setData([
-      'link' => 'http://localhost:8080' . BASE_URL . "/api/verify/$token"
-    ]);
-    $email->setFrom('no-reply@admin.com', 'noreply');
-    $email->setTo($newCustomer->Email);
-    $email->setSubject('Verify email address for e-commerce');
-
-    $result = $email->send();
+    $result = EmailHelper::sendEmailValidation($email, $token);
 
     if ($result !== true) {
       return $this->getResponse()->setBody(json_encode([

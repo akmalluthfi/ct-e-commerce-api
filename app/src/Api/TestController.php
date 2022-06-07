@@ -2,17 +2,30 @@
 
 namespace Api;
 
-use SilverStripe\Control\Director;
+use Exception;
+use SilverStripe\Assets\Image;
+use SilverStripe\Assets\Upload;
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPRequest;
 
 class TestController extends Controller
 {
-  public function index()
+  public function index(HTTPRequest $request)
   {
-    var_dump(Director::baseURL());
-    var_dump(BASE_URL);
-    var_dump(BASE_PATH);
-    var_dump(Director::baseFolder());
+    $file = $request->postVar('image');
+    // var_dump($file);
+    // die();
+    try {
+      // coba upload gambar 
+      $image = Image::create();
+
+      $upload = Upload::create();
+      $upload->loadIntoFile($file, $image, 'user-profile/default');
+      $upload->getValidator()->setAllowedExtensions(['jpg', 'jpeg', 'png']);
+    } catch (Exception $e) {
+      var_dump($e);
+      die();
+    }
 
     die();
   }

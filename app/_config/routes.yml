@@ -6,6 +6,10 @@ After:
 ---
 SilverStripe\Control\Director:
   rules:
-    'api/customers/$param': 'Api\CustomerController'
-    'api/test': 'Api\TestController'
+    'api/customers/carts/$id': 'Api\CartsController'
+    'api/customers/profile/$action': 'Api\ProfileCustomerController'
+    'api/customers/$action': 'Api\CustomerController'
     'api/verify/$token': 'Api\VerifyController'
+    'api/password_reset/$token': 'Api\ResetPasswordController'
+    'api/change_email/$token': 'Api\ChangeEmailController'
+    'api/test/$id': 'Api\TestController'

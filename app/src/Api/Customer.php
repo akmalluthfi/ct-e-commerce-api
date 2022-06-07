@@ -2,6 +2,9 @@
 
 namespace Api;
 
+use Api\Cart;
+use Api\Order;
+use SilverStripe\Assets\Image;
 use SilverStripe\Security\Member;
 
 class Customer extends Member

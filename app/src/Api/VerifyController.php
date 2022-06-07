@@ -2,10 +2,13 @@
 
 namespace Api;
 
+use Api\Verify;
+use Firebase\JWT\JWT;
+use SilverStripe\Security\Member;
+use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\ValidationException;
-use SilverStripe\Security\Member;
 
 class VerifyController extends Controller
 {
@@ -29,6 +32,9 @@ class VerifyController extends Controller
       'text' => 'Please login and resend the link.'
     ])->renderWith('Api/verify');
 
+    // hapus token 
+    $verify->delete();
+
     // ubah isvalidate member id menjadi true
     $member = Member::get_by_id($verify->MemberID);
     // tampilkan halaman bahwa 
@@ -46,5 +52,37 @@ class VerifyController extends Controller
         'text' => 'Please try again later.'
       ])->renderWith('Api/verify');
     }
+  }
+
+  public static function createVerifyToken($expired, $id)
+  {
+    // buat token 
+    $token = hash('sha256', $expired);
+
+    // masukkan ke database verify 
+    $verify = Verify::create();
+    $verify->Token = $token;
+    $verify->MemberID = $id;
+    $verify->Expired = $expired;
+
+    $verify->write();
+
+    return $token;
+  }
+
+  public static function createJWT($payload, $expired, $id)
+  {
+    // buat token 
+    $token = JWT::encode($payload, Environment::getEnv('SECRET_KEY'), 'HS256');
+
+    // masukkan ke database verify 
+    $verify = Verify::create();
+    $verify->Token = $token;
+    $verify->MemberID = $id;
+    $verify->Expired = $expired;
+
+    $verify->write();
+
+    return $token;
   }
 }

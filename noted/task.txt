@@ -1,116 +1,33 @@
-buat validate saat user berhasil register 
+forgot-password 
 
-user register menggunakan link di email 
-// algoritma
-user register
-cek apakah email sudah tersedia didatabase, 
-  jika belum maka register seperti semula
-  kirimkan email berisi link untuk membuat email tersebut tervalidasi
+/forgot-password 
+insert email 
+send confirmation in gmail
 
-  jika sudah ada, 
-  cek apakah sudah divalidate 
-    jika belum maka bisa register seperti semula
-    kirimkan email berisi link untuk membuat email tersebut tervalidasi
+button change password -> halaman ubah password ()
 
-    jika sudah divalidasi tolak 
+// edit profile 
 
 
-user verify link berisi hash random 
-lalu buat verify token dan beri waktu 10 menit untuk verify, 
-jika tombol tersebut ditekan, 
-  consume api untuk mengubah email menjadi validate
+titip 
+    // cek apakah jwt tersebut memang dari kita 
+    $result = $this->_isAuthorized($jwt);
 
+    if ($result['error']) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 403,
+      'message' => $result['exception']->getMessage(),
+    ]));
 
-validate (link dari button di gmail akan mengarah ke sini)
-cek apakah verify-token ada 
-  jika tidak ada
-  hapus data user tersebut 
+    // ini id dari parameter
+    // $id = intval($request->param('param'));
+    // ini id dari decode jwt 
+    $id = $result['data']->id;
 
-  jika ada 
-  cek apakah token tersebut expired 
-    jika iya 
-    tampilkan ke halaman bahwa token telah expired
-
-    jika tidak 
-    ubah validate user dari false menjadi true
-
-
-###########
-user register 
-  -> not exist
-    -> add to database, set is validate to false
-    -> create link, berisi hash dan id user 
-    -> create email berisi link tersebut 
-  -> cek if email exists
-    -> cek if email validate 
-      -> return false
-    -> if email not validate
-      -> delete user
-      -> add to database, set validate to false 
-      -> create link, berisi hash dan id user 
-      -> create email berisi link tersebut
-
-email verify
--> cek is hash exist in database
-  -> cek apakah sudah expired 
-    -> jika sudah 
-      tampilkan ke halaman bahwa url sudah invalid 
-    -> jika belum
-      tambah data ke database 
-      tampilkan ke halaman bahwa akun selesai diregistrasi silahkan login
-
-
-kebutuhan api 
-/api/customers/register => untuk customer register pertama kali 
-/api/customers/verifiy => untuk customer verify, (juga sebagai link yang ditanam di tombol yang dikirim lewat email)
-
-kebutuhan halaman 
-halaman untuk email 
-page yang ditampilkan setelah email berhasil ditekan
-
-
-############################################################
-api register otp
-1. User register 
-  cek apakah ada user dengan email yang sama
-    jika tidak
-    buat user tersebut 
-    lalu kirimkan email berisi kode otp dan expired time
-    return success,
-
-    jika iya 
-    cek apakah dia sudah divalidasi 
-      jika sudah 
-      tolak 
-
-      jika belum 
-      hapus user tersebut, 
-      lalu buat user tersebut 
-      lalu kirimkan email berisi kode otp dan expired time
-      return success
-
-api validate otp
-2. validasi otp  
-  cek apakah otp tersebut tersedia didatabase 
-    jika otp tidak ada 
-    return kode otp salah 
-
-    jika otp tersedia, 
-    cek apakah otp tersebut expired 
-      jika iya, 
-      hapus otp
-      return kode otp expired silahkan registrasi kembali 
-      frontend pindah halaman ke registrasi
-     
-      jika belum, 
-      cek apakah otp tersebut benar milik user 
-        jika benar 
-        frontend redirect ke halaman login
-
-        jika salah 
-        return kode otp salah 
-
-OTP
-db = [
-  'MemberID' , 'OTP'
-]; 
+    // cek apakah user sudah login
+    $isLogin = Token::get()->filter('MemberID', $id)->first();
+    if (is_null($isLogin)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => "User not login",
+    ]));

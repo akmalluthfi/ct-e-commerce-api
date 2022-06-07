@@ -13,7 +13,8 @@ class Merchant extends Member
 
   private static $db = [
     'isOpen' => 'Boolean',
-    'isApproved' => 'Boolean'
+    'isApproved' => 'Boolean',
+    'isValidated' => 'Boolean'
   ];
 
   private static $has_one = [
