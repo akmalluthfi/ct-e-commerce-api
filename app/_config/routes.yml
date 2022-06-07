@@ -9,6 +9,7 @@ SilverStripe\Control\Director:
     'api/customers/carts/$id': 'Api\CartsController'
     'api/customers/profile/$action': 'Api\ProfileCustomerController'
     'api/customers/$action': 'Api\CustomerController'
+    'api/merchants/$action': 'Api\MerchantController'
     'api/verify/$token': 'Api\VerifyController'
     'api/password_reset/$token': 'Api\ResetPasswordController'
     'api/change_email/$token': 'Api\ChangeEmailController'

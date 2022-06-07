@@ -2,21 +2,20 @@
 
 namespace Api;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use Api\Api;
-use Api\Customer;
-use Exception;
-use SilverStripe\Control\Controller;
-use SilverStripe\Control\Email\Email;
-use SilverStripe\Control\HTTPRequest;
-use SilverStripe\Core\Environment;
-use SilverStripe\ORM\ValidationException;
-use SilverStripe\Security\Member;
-use SilverStripe\Security\MemberAuthenticator\MemberAuthenticator;
+use Api\Merchant;
+use Api\EmailHelper;
+use Api\TokenController;
 use Token;
+use SilverStripe\Security\Member;
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\ORM\ValidationException;
+use SilverStripe\Security\MemberAuthenticator\MemberAuthenticator;
+use Firebase\JWT\JWT;
+use SilverStripe\Core\Environment;
 
-class CustomerController extends Controller
+class MerchantController extends Controller
 {
   public function init()
   {
@@ -44,6 +43,8 @@ class CustomerController extends Controller
 
   public function index(HTTPRequest $request)
   {
+    if (!is_null($this->response->getBody())) return $this->response;
+
     if (!$request->isPOST()) return $this->httpError(404);
     $action = $request->param('action');
 
@@ -54,128 +55,6 @@ class CustomerController extends Controller
     if ($action === 'change-password') return $this->change_password($request);
 
     return $this->httpError(404);
-  }
-
-  public function change_password(HTTPRequest $request)
-  {
-    // cek apakah password === confirmation password
-    $body = json_decode($request->getBody());
-
-    // cek apakah ada token yang terkirim 
-    $token = Verify::get()->filter('Token', $body->token)->first();
-
-    if (is_null($token)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 400,
-      'message' => "invalid token",
-    ]));
-
-    $member = Member::get_by_id($token->MemberID);
-
-    $member->Password = $body->password;
-
-    try {
-      $member->write();
-    } catch (ValidationException $e) {
-      return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 400,
-        'message' => $e->getMessage(),
-      ]));
-    }
-
-    // hapus token 
-    $token->delete();
-
-    return $this->getResponse()->setBody(json_encode([
-      'success' => true,
-      'code' => 200,
-      'message' => 'success change password',
-    ]));
-  }
-
-  public function forget_password(HTTPRequest $request)
-  {
-    // apakah ada email yang dikirim 
-    if (is_null($email = $request->postVar('email'))) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 400,
-      'message' => "request cannot be accepted, parameter required",
-    ]));
-    // ambil email yang dikirim
-    // cek apakah email ada didatabase 
-    $customer = Customer::get()->filter('Email', $email)->first();
-    if (is_null($customer)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 404,
-      'message' => "Email not found",
-    ]));
-
-    // cek apakah customer ini valid 
-    if ($customer->isValidated === 0) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 400,
-      'message' => "request cannot be accepted, user not valid",
-    ]));
-
-    // create and store verify token
-    $current_date = strtotime(date('Y-m-d H:i:s'));
-    $expired = date('Y-m-d H:i:s', strtotime('+3 hours', $current_date));
-    $token = VerifyController::createVerifyToken($expired, $customer->ID);
-
-    $result = EmailHelper::sendEmailForgotPassword($customer->Email, $token);
-
-    if ($result !== true) {
-      return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 500,
-        'message' => 'Something went wrong'
-      ]));
-    }
-
-    return $this->getResponse()->setBody(json_encode([
-      'success' => true,
-      'code' => 200,
-      'message' => 'success send email verification'
-    ]));
-  }
-
-  public function logout(HTTPRequest $request)
-  {
-    // cek apakah ada access token di header
-    if (is_null($jwt = $request->getHeader('access-token'))) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 401,
-      'message' => "Unauthorized",
-    ]));
-
-    try {
-      // ambil informasi yang ada diheader 
-      $decoded = JWT::decode($jwt, new Key(Environment::getEnv('SECRET_KEY'), Environment::getEnv('ALG')));
-    } catch (Exception $e) {
-      return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 403,
-        'message' => $e->getMessage(),
-      ]));
-    }
-
-    // cek apakah user masih login 
-    $isLogin = Token::get()->filter('MemberID', $decoded->id)->first();
-    if (is_null($isLogin)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 404,
-      'message' => "User not login",
-    ]));
-
-    // jika belum login 
-    // hapus token 
-    $isLogin->delete();
-    return $this->getResponse()->setBody(json_encode([
-      'success' => true,
-      'code' => 200,
-      'message' => "user logged out successfully",
-    ]));
   }
 
   public function login(HTTPRequest $request)
@@ -204,6 +83,13 @@ class CustomerController extends Controller
       'success' => false,
       'code' => 403,
       'message' => "Validation required",
+    ]));
+
+    // cek apakah sudah di approve 
+    if ($member->isApproved === 0) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 403,
+      'message' => 'Approvement required',
     ]));
 
     // cek password 
@@ -278,7 +164,7 @@ class CustomerController extends Controller
       if ($member->isValidated === 1) return $this->getResponse()->setBody(json_encode([
         'success' => false,
         'code' => 409,
-        'message' => "Customers Already exists",
+        'message' => "Merchants Already exists",
       ]));
 
       // kalau belum 
@@ -286,16 +172,16 @@ class CustomerController extends Controller
     }
 
     // jika sudah tambahkan ke database
-    $customer = Customer::create();
-    $customer->Email = $email;
-    $customer->Password = $password;
-    $customer->isValidated = false;
-    $customer->PictureID = 3;
+    $merchant = Merchant::create();
+    $merchant->Email = $email;
+    $merchant->Password = $password;
+    $merchant->IsValidated = false;
+    $merchant->PictureID = 3;
 
     try {
-      $customer->write();
-      // Buat token
-      $token = TokenController::createToken($customer->Created, $customer->ID);
+      $merchant->write();
+      // Buat token untuk verifikasi email
+      $token = TokenController::createToken($merchant->Created, $merchant->ID);
     } catch (ValidationException $e) {
       return $this->getResponse()->setBody(json_encode([
         'success' => false,
@@ -317,7 +203,7 @@ class CustomerController extends Controller
     return $this->getResponse()->setBody(json_encode([
       'success' => true,
       'code' => 200,
-      'message' => 'success create new customer, we send a email verification, please check'
+      'message' => 'success create new merchant, please verifiction first before login'
     ]));
   }
 }
