@@ -44,6 +44,7 @@ class ChangeEmailController extends Controller
     $member = Member::get_by_id($verify->MemberID);
     // set email member ke email baru  
     $member->Email = $decoded->email;
+
     try {
       $member->write();
       // jika berhasil diganti, hapus token
@@ -53,6 +54,7 @@ class ChangeEmailController extends Controller
         'text' => 'You can now login with your new email.'
       ])->renderWith('Api/change_email');
     } catch (Exception $e) {
+      // ada kemungkinan exception karena email sudah ada 
       return $this->customise([
         'title' => 'Sorry Something went wrong.',
         'text' => 'Please try again later.'

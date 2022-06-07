@@ -47,16 +47,55 @@ class MerchantController extends Controller
   {
     if (!is_null($this->response->getBody())) return $this->response;
 
-    if (!$request->isPOST()) return $this->httpError(404);
-    $action = $request->param('action');
+    if ($request->isGET()) {
+      // cek param, apakah int
+      if (is_numeric($id = $request->param('action'))) {
+        // get merchants by id 
+        return $this->getMerchantById($id);
+      }
+    }
 
-    if ($action === 'register') return $this->register($request);
-    if ($action === 'login') return $this->login($request);
-    if ($action === 'logout') return $this->logout($request);
-    if ($action === 'forget-password') return $this->forget_password($request);
-    if ($action === 'change-password') return $this->change_password($request);
+    if ($request->isPOST()) {
+      $action = $request->param('action');
+
+      if ($action === 'register') return $this->register($request);
+      if ($action === 'login') return $this->login($request);
+      if ($action === 'logout') return $this->logout($request);
+      if ($action === 'forget-password') return $this->forget_password($request);
+      if ($action === 'change-password') return $this->change_password($request);
+    }
 
     return $this->httpError(404);
+  }
+
+  public function getMerchantById($id)
+  {
+    $merchant = Merchant::get()->filter([
+      'ID' => $id,
+      'isApproved' => true,
+      'isValidated' => true
+    ])->first();
+
+    // jika tidak ada 
+    if (is_null($merchant)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => 'Merchant not found',
+    ]));
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success get merchant',
+      'data' => [
+        'id' => $merchant->ID,
+        'name' => $merchant->FirstName,
+        'email' => $merchant->Email,
+        'is_open' => $merchant->isOpen,
+        'category' => $merchant->Category()->Name,
+        'picture' => $merchant->Picture()->AbsoluteLink(),
+      ]
+    ]));
   }
 
   public function change_password(HTTPRequest $request)

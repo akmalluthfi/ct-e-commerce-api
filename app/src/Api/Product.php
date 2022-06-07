@@ -11,7 +11,7 @@ class Product extends DataObject
   private static $db = [
     'Title' => 'Varchar',
     'Price' => 'Int',
-    'isAvailble' => 'Boolean'
+    'isAvailable' => 'Boolean'
   ];
 
   private static $has_many = [
