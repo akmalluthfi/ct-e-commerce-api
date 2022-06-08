@@ -8,10 +8,11 @@ SilverStripe\Control\Director:
   rules:
     'api/customers/carts/$id': 'Api\CartsController'
     'api/customers/profile/$action': 'Api\ProfileCustomerController'
+    'api/customers/carts/$action': Api\CartsController
     'api/customers/$action': 'Api\CustomerController'
     'api/merchants/profile/$action': 'Api\ProfileMerchantController'
-    'api/merchants/$action': 'Api\MerchantController'
-    'api/products/$id': 'Api\ProductController'
+    'api/merchants/$action/$field': 'Api\MerchantController'
+    'api/products/$id/$resource/$resource_id': 'Api\ProductController'
     'api/verify/$token': 'Api\VerifyController'
     'api/password_reset/$token': 'Api\ResetPasswordController'
     'api/change_email/$token': 'Api\ChangeEmailController'

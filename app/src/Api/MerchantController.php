@@ -48,10 +48,40 @@ class MerchantController extends Controller
     if (!is_null($this->response->getBody())) return $this->response;
 
     if ($request->isGET()) {
+      // cek apakah ada access token 
+      $accTk = $request->getHeader('access-token');
+
+      if (is_null($accTk)) return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 401,
+        'message' => 'Unauthorized',
+      ]));
+
+      // cek apakah valid
+      try {
+        $decoded = JWT::decode($accTk, new Key(Environment::getEnv('SECRET_KEY'), 'HS256'));
+      } catch (\Exception $e) {
+        return $this->getResponse()->setBody(json_encode([
+          'success' => false,
+          'code' => 401,
+          'message' => 'Unauthorized',
+        ]));
+      }
+
+      // ambil param
+      $id = $request->param('action');
+      $field = $request->param('field');
+
+      // jika tidak ada param 
+      if (is_null($id) && is_null($field)) return $this->getAllMerchants($request);
+
       // cek param, apakah int
-      if (is_numeric($id = $request->param('action'))) {
+      if (is_numeric($id)) {
+        // cek apakah ada field yang dikirimkan 
         // get merchants by id 
-        return $this->getMerchantById($id);
+        if (is_null($field = $request->param('field'))) return $this->getMerchantById($id);
+
+        if ($field === 'products') return $this->getMerchantProducts($id);
       }
     }
 
@@ -66,6 +96,70 @@ class MerchantController extends Controller
     }
 
     return $this->httpError(404);
+  }
+
+  public function getAllMerchants(HTTPRequest $request)
+  {
+    // $merchants = Merchant::get();
+    $merchants = Merchant::get()->filter([
+      'isValidated' =>  true,
+      'isApproved' => true,
+    ]);
+
+    $filter = [];
+
+    if (!is_null($keyword = $request->getVar('s'))) {
+      $filter['Products.Title:PartialMatch'] = $keyword;
+    }
+
+    // tambahkan filter
+    $merchants = $merchants->filter($filter);
+    // array untuk menampung hasil 
+    $resource = [];
+    foreach ($merchants as $merchant) {
+      array_push($resource, [
+        'id' => $merchant->ID,
+        'name' => $merchant->FirstName,
+        'email' => $merchant->Email,
+        'is_open' => $merchant->isOpen,
+        'category' => $merchant->Category()->Name,
+        'picture' => $merchant->Picture()->AbsoluteLink(),
+      ]);
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success get merchant',
+      'merchants' => $resource
+    ]));
+  }
+
+  public function getMerchantProducts($id)
+  {
+    $products = Product::get()->filter('MerchantID', $id);
+    $resource = [];
+
+    foreach ($products as $key => $product) {
+      array_push($resource, [
+        'id' => $product->ID,
+        'title' => $product->Title,
+        'price' => $product->Price,
+        'isAvailable' => $product->isAvailable,
+        'images' => [],
+      ]);
+
+      foreach ($product->images() as $image) {
+        array_push($resource[$key]['images'], $image->AbsoluteLink());
+      }
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'success get product with merchant',
+      'product' => $resource
+    ]));
   }
 
   public function getMerchantById($id)

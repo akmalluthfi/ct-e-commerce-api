@@ -1,36 +1,5 @@
-forgot-password 
+products 
 
-/forgot-password 
-insert email 
-send confirmation in gmail
+cek access token milik siapa jika mau menambahkan product, edit product, delete products
 
-button change password -> halaman ubah password ()
-
-// edit profile 
-
-
-titip 
-    // cek apakah jwt tersebut memang dari kita 
-    $result = $this->_isAuthorized($jwt);
-
-    if ($result['error']) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 403,
-      'message' => $result['exception']->getMessage(),
-    ]));
-
-    // ini id dari parameter
-    // $id = intval($request->param('param'));
-    // ini id dari decode jwt 
-    $id = $result['data']->id;
-
-    // cek apakah user sudah login
-    $isLogin = Token::get()->filter('MemberID', $id)->first();
-    if (is_null($isLogin)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 404,
-      'message' => "User not login",
-    ]));
-
-
-    
+jika hanya mengambil products customer juga diperbolehkan 
