@@ -106,7 +106,7 @@ class ProductController extends Controller
 
     if ($request->isPOST()) {
       // jika tidak ada id dan resource yang dikirimkan 
-      if (is_null($id) && is_null($resource)) $this->addProduct($request, $merchant);
+      if (is_null($id) && is_null($resource)) return $this->addProduct($request, $merchant);
 
       // cek apakah id yang dikirimkan numeric 
       if (!is_numeric($id)) return $this->getResponse()->setBody(json_encode([

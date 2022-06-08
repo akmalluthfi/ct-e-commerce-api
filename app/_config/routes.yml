@@ -6,9 +6,8 @@ After:
 ---
 SilverStripe\Control\Director:
   rules:
-    'api/customers/carts/$id': 'Api\CartsController'
+    'api/customers/carts/$id/$resource': 'Api\CartController'
     'api/customers/profile/$action': 'Api\ProfileCustomerController'
-    'api/customers/carts/$action': Api\CartsController
     'api/customers/$action': 'Api\CustomerController'
     'api/merchants/profile/$action': 'Api\ProfileMerchantController'
     'api/merchants/$action/$field': 'Api\MerchantController'

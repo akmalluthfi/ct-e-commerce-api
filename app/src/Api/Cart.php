@@ -14,6 +14,6 @@ class Cart extends DataObject
 
   private static $has_one = [
     'Customer' => Customer::class,
-    'Product' => Customer::class,
+    'Product' => Product::class,
   ];
 }
