@@ -1,5 +1,2 @@
-products 
-
-cek access token milik siapa jika mau menambahkan product, edit product, delete products
-
-jika hanya mengambil products customer juga diperbolehkan 
+add api delete product from cart
+add api edit status products in cart

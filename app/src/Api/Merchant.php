@@ -2,6 +2,8 @@
 
 namespace Api;
 
+use SilverStripe\Forms\Tab;
+
 use Api\Order;
 use Api\Product;
 use Api\MerchantCategory;
@@ -10,7 +12,12 @@ use SilverStripe\Forms\TabSet;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
 use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\TextField;
 
 class Merchant extends Member
 {
@@ -32,10 +39,6 @@ class Merchant extends Member
     'Orders' => Order::class
   ];
 
-  /**
-   * CMS Fields
-   * @return FieldList
-   */
   public function getCMSFields()
   {
     $fields = FieldList::create(TabSet::create('Root'));

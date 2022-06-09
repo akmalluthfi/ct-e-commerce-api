@@ -8,8 +8,6 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 
-use function PHPUnit\Framework\returnSelf;
-
 class CartController extends Controller
 {
   public function init()
@@ -68,20 +66,70 @@ class CartController extends Controller
     ]));
 
     // jika iya, method yang dipakai
-    if ($request->isGET()) return $this->get_carts($customer);
+    if ($request->isGET()) return $this->get_cart($customer);
     if ($request->isPOST()) return $this->add_to_cart($request, $customer);
 
     if ($request->isPUT()) {
       $id = $request->param('id');
       $resource = $request->param('resource');
 
-      if (is_numeric($id) && $resource === 'quantity') return $this->editProductQuantity($request, $customer);
+      if (is_null($id) && is_null($resource)) return $this->edit_status_cart($request, $customer);
+
+      if (is_numeric($id) && $resource === 'quantity') return $this->edit_quantity_cart($request, $customer);
+    }
+
+    // delete product in cart
+    if ($request->isDELETE()) {
+      $id = $request->param('id');
+
+      if (is_numeric($id)) return $this->delete_from_cart($customer, $id);
     }
 
     return $this->httpError(404);
   }
 
-  public function editProductQuantity(HTTPRequest $request, Customer $customer)
+  public function edit_status_cart(HTTPRequest $request, Customer $customer)
+  {
+    // ambil data yang dikirim lewat json
+    $products = json_decode($request->getBody());
+    // cari product di cart yang id nya sama dengan product id yang dikirimkan 
+    // jika ada ubah, jika tidak ada biarkan
+    foreach ($products as $product) {
+      $cart = $customer->carts()->filter('ProductID', $product->product_id)->first();
+      if (!is_null($cart)) {
+        $cart->isChecked = $product->is_checked;
+        $cart->write();
+      }
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success change status product',
+    ]));
+  }
+
+  public function delete_from_cart(Customer $customer, $product_id,)
+  {
+    // cari product didalam customer carts
+    $carts = $customer->carts()->filter('ProductID', $product_id)->first();
+
+    if (is_null($carts)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => 'Product not found',
+    ]));
+    // jika ada, hapus
+    $carts->delete();
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success delete product in carts',
+    ]));
+  }
+
+  public function edit_quantity_cart(HTTPRequest $request, Customer $customer)
   {
     // cek apakah parameter dikirim
     $body = json_decode($request->getBody());
@@ -125,7 +173,7 @@ class CartController extends Controller
     }
   }
 
-  public function get_carts(Customer $customer)
+  public function get_cart(Customer $customer)
   {
     $resource = [
       'customer' => [
@@ -141,6 +189,8 @@ class CartController extends Controller
       array_push($resource['products'], [
         'product_id' => $cart->ProductID,
         'quantity' => $cart->Quantity,
+        'is_checked' => $cart->isChecked,
+        'is_available' => $cart->product()->isAvailable,
         'product_name' => $cart->product()->Title,
         'product_price' => $cart->product()->Price,
         'merchant' => [
@@ -209,6 +259,7 @@ class CartController extends Controller
 
     $cart = Cart::create();
     $cart->Quantity = $quantity;
+    $cart->isChecked = false;
     $cart->ProductID = $product_id;
     $cart->CustomerID = $customer->ID;
 

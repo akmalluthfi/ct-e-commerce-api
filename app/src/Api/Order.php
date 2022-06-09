@@ -9,7 +9,8 @@ class Order extends DataObject
   private static $table_name = 'orders';
 
   private static $db = [
-    'Total' => 'Int' //total semua barang 
+    'Total' => 'Int',  //total semua barang 
+    'Status' => 'Int' // 0 => pending, 1 => accepted, 2 => rejected
   ];
 
   private static $has_one = [

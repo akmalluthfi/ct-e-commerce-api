@@ -10,6 +10,7 @@ class Cart extends DataObject
 
   private static $db = [
     'Quantity' => 'Int',  //jumlah product yang dipesan
+    'isChecked' => 'Boolean' // status apakah product di centang atau tidak
   ];
 
   private static $has_one = [

@@ -23,4 +23,9 @@ class Customer extends Member
     'Carts' => Cart::class,
     'Orders' => Order::class
   ];
+
+  public function name()
+  {
+    return $this->FirstName . ' ' . $this->LastName;
+  }
 }

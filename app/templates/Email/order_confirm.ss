@@ -67,14 +67,10 @@
         "
       >
         <header>
-          <h2 style="text-align: center">Order accepted</h2>
-          <p>
-            Hello $customer, your order has accepted by $merchant. here details
-            for you
-          </p>
+          <h2 style="text-align: center">Hello we have order for you</h2>
+          <p>Please check application for more details</p>
         </header>
-        <section>
-          <h1 style="text-align: center">Order details</h1>
+        <main style="margin-bottom: 20px">
           <!-- table -->
           <table style="width: 100%">
             <thead>
@@ -88,19 +84,15 @@
             </thead>
             <tbody>
               <% loop $product %>
-              <tr style="border-bottom: 1px solid darkgrey">
-                <th style="text-align: center; padding: 1rem 0.5rem">$Pos</th>
-                <td style="text-align: center; padding: 1rem 0.5rem">
-                  $product_name
-                </td>
-                <td style="text-align: center; padding: 1rem 0.5rem">
-                  $quantity
-                </td>
-                <td style="text-align: center; padding: 1rem 0.5rem">$price</td>
-                <td style="text-align: center; padding: 1rem 0.5rem">
-                  $sub_total
-                </td>
-              </tr>
+                <tr style="border-bottom: 1px solid darkgrey">
+                  <th style="text-align: center; padding: 1rem 0.5rem">$Pos</th>
+                  <td style="text-align: center; padding: 1rem 0.5rem">
+                    $product_name
+                  </td>
+                  <td style="text-align: center; padding: 1rem 0.5rem">$quantity</td>
+                  <td style="text-align: center; padding: 1rem 0.5rem">$price</td>
+                  <td style="text-align: center; padding: 1rem 0.5rem">$sub_total</td>
+                </tr>
               <% end_loop %>
             </tbody>
           </table>
@@ -112,7 +104,7 @@
               <div style="display: inline; float: right">$total</div>
             </div>
           </div>
-        </section>
+        </main>
       </main>
 
       <!-- footer -->

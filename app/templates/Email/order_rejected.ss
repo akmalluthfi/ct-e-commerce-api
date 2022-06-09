@@ -67,10 +67,9 @@
         "
       >
         <header>
-          <h2 style="text-align: center">Order accepted</h2>
+          <h2 style="text-align: center">Order rejected by $merchant</h2>
           <p>
-            Hello $customer, your order has accepted by $merchant. here details
-            for you
+            Hello $customer, your order has rejected by $merchant.
           </p>
         </header>
         <section>

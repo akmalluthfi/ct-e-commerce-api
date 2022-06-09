@@ -4,6 +4,7 @@ namespace Api;
 
 use SilverStripe\Control\Email\Email;
 use SilverStripe\Core\Environment;
+use SilverStripe\ORM\ArrayList;
 
 class EmailHelper
 {
@@ -57,6 +58,55 @@ class EmailHelper
     $email->setFrom('no-reply@admin.com', 'noreply');
     $email->setTo(Environment::getEnv('ADMIN_EMAIL'));
     $email->setSubject('New merchants has registered');
+
+    return $email->send();
+  }
+
+  public static function sendOrderConfirmation($to, $data)
+  {
+    $email = Email::create();
+    $email->setHTMLTemplate('Email\\order_confirm');
+    $email->setFrom('no-reply@admin.com', 'noreply');
+    $email->setData([
+      'product' => new ArrayList($data['product']),
+      'total' => $data['total']
+    ]);
+    $email->setTo($to);
+    $email->setSubject('new order notification');
+
+    return $email->send();
+  }
+
+  public static function sendOrderRejected($to, $data)
+  {
+    $email = Email::create();
+    $email->setHTMLTemplate('Email\\order_rejected');
+    $email->setFrom('no-reply@admin.com', 'noreply');
+    $email->setData([
+      'product' => new ArrayList($data['order_details']),
+      'total' => $data['total'],
+      'merchant' => $data['merchant'],
+      'customer' => $data['customer'],
+    ]);
+    $email->setTo($to);
+    $email->setSubject('Order Rejected');
+
+    return $email->send();
+  }
+
+  public static function sendOrderAccepted($to, $data)
+  {
+    $email = Email::create();
+    $email->setHTMLTemplate('Email\\order_accepted');
+    $email->setFrom('no-reply@admin.com', 'noreply');
+    $email->setData([
+      'product' => new ArrayList($data['order_details']),
+      'total' => $data['total'],
+      'merchant' => $data['merchant'],
+      'customer' => $data['customer'],
+    ]);
+    $email->setTo($to);
+    $email->setSubject('Order Accepted');
 
     return $email->send();
   }
