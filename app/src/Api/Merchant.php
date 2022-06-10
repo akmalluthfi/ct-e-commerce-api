@@ -2,8 +2,6 @@
 
 namespace Api;
 
-use SilverStripe\Forms\Tab;
-
 use Api\Order;
 use Api\Product;
 use Api\MerchantCategory;
@@ -11,13 +9,14 @@ use SilverStripe\Assets\Image;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\Forms\CheckboxField;
-use SilverStripe\Forms\GridField\GridField;
-use SilverStripe\Forms\GridField\GridFieldConfig;
-use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
-use SilverStripe\Forms\GridField\GridFieldDataColumns;
+use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\ReadonlyField;
-use SilverStripe\Forms\TextField;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldPageCount;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
+use SilverStripe\Forms\GridField\GridFieldFooter;
+use SilverStripe\Forms\GridField\GridFieldPaginator;
 
 class Merchant extends Member
 {
@@ -43,11 +42,30 @@ class Merchant extends Member
   {
     $fields = FieldList::create(TabSet::create('Root'));
 
-    $fields->addFieldsToTab('Root.Main', [
+    $fields->addFieldsToTab('Root.Profile', [
       ReadonlyField::create('FirstName', 'Name'),
       ReadonlyField::create('Email'),
-      ReadonlyField::create('isOpen', 'Status'),
-      CheckboxField::create('isApproved', 'isApproved')->setDescription('is approved for this merchants'),
+      ReadonlyField::create('isOpen', 'Status')->setDescription('status merchant 1 for open and 0 for close'),
+      $dropdown = DropdownField::create('isApproved', 'isApproved', [
+        0 => 'No',
+        1 => 'Yes'
+      ]),
+    ]);
+    $dropdown->setDescription('you can edit this merchat approved or not');
+
+    $config = GridFieldConfig_RecordViewer::create();
+    $config->removeComponentsByType([
+      GridFieldPageCount::class,
+      GridFieldPaginator::class
+    ]);
+
+    $fields->addFieldsToTab('Root.Products', [
+      GridField::create(
+        'Products',
+        'Products List',
+        $this->Products(),
+        $config
+      )
     ]);
 
     return $fields;
