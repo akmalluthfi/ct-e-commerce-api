@@ -22,6 +22,7 @@ class ProfileMerchantController extends Controller
   {
     parent::init();
     $this->getResponse()->addHeader("Content-type", "application/json");
+    $this->getResponse()->addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, x-api-key');
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');

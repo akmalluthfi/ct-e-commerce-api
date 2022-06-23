@@ -20,6 +20,7 @@ class ProductController extends Controller
       'Access-Control-Allow-Origin',
       'http://localhost:3000'
     );
+    $this->getResponse()->addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, x-api-key');
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');
