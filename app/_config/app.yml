@@ -18,3 +18,7 @@ SilverStripe\ORM\Connect\MySQLDatabase:
 SilverStripe\Control\Email\Email:
   admin_email:
     support@example.com: 'Support team'
+
+SilverStripe\SiteConfig\SiteConfig:
+  extensions:
+    - BannerConfig

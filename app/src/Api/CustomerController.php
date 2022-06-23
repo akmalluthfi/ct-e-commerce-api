@@ -285,6 +285,14 @@ class CustomerController extends Controller
       $member->delete();
     }
 
+    // cek apakah email valid 
+    $pattern = "/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/";
+    if (!preg_match($pattern, $email)) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => 'Email Invalid',
+    ]));
+
     // jika sudah tambahkan ke database
     $customer = Customer::create();
     $customer->Email = $email;
