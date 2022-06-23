@@ -14,6 +14,10 @@ class CartController extends Controller
   {
     parent::init();
     $this->getResponse()->addHeader("Content-type", "application/json");
+    $this->getResponse()->addHeader(
+      'Access-Control-Allow-Origin',
+      'http://localhost:3000'
+    );
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');

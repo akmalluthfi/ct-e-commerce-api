@@ -2,13 +2,9 @@
 
 namespace Api;
 
-use PDO;
 use Api\Customer;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use SilverStripe\ORM\ArrayLib;
-use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\DataObject;
 use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
@@ -19,6 +15,10 @@ class OrderController extends Controller
   {
     parent::init();
     $this->getResponse()->addHeader("Content-type", "application/json");
+    $this->getResponse()->addHeader(
+      'Access-Control-Allow-Origin',
+      'http://localhost:3000'
+    );
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');
