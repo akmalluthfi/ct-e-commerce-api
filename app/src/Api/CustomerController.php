@@ -261,16 +261,17 @@ class CustomerController extends Controller
 
   public function register(HTTPRequest $request)
   {
-    // ambil param body 
-    $email = $request->postVar('email');
-    $password = $request->postVar('password');
+    $body = json_decode($request->getBody(), true);
 
     // cek apakah param ada 
-    if (is_null($email) || is_null($password)) return $this->getResponse()->setBody(json_encode([
+    if (!isset($body['email']) || !isset($body['password'])) return $this->getResponse()->setBody(json_encode([
       'success' => false,
       'code' => 400,
       'message' => "request cannot be accepted, parameter required",
     ]));
+
+    $email = $body['email'];
+    $password = $body['password'];
 
     // cek apakah email sudah tersedia di database 
     $member = Member::get()->filter('Email', $email)->first();
@@ -282,7 +283,7 @@ class CustomerController extends Controller
       if ($member->isValidated === 1) return $this->getResponse()->setBody(json_encode([
         'success' => false,
         'code' => 409,
-        'message' => "Customers Already exists",
+        'message' => 'Email already registered',
       ]));
 
       // kalau belum 
