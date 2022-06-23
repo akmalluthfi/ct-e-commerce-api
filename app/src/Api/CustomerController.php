@@ -48,6 +48,8 @@ class CustomerController extends Controller
 
   public function index(HTTPRequest $request)
   {
+    if (!is_null($this->response->getBody())) return $this->response;
+
     if (!$request->isPOST()) return $this->httpError(404);
     $action = $request->param('action');
 
