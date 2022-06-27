@@ -185,8 +185,10 @@ class CustomerController extends Controller
   public function login(HTTPRequest $request)
   {
     // ambil param body 
-    $email = $request->postVar('email');
-    $password = $request->postVar('password');
+    $body = json_decode($request->getBody());
+
+    $email = $body->email;
+    $password = $body->password;
 
     // cek apakah param ada 
     if (is_null($email) || is_null($password)) return $this->getResponse()->setBody(json_encode([
