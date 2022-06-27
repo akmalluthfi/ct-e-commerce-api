@@ -19,7 +19,8 @@ class OrderController extends Controller
       'Access-Control-Allow-Origin',
       'http://localhost:3000'
     );
-    $this->getResponse()->addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, x-api-key');
+    $this->getResponse()->addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, x-api-key, access-token');
+    $this->getResponse()->addHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, POST');
 
     // cek ketersediaan api_key
     $api_key = $this->getRequest()->getHeader('x-api-key');
