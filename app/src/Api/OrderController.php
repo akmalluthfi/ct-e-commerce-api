@@ -84,6 +84,40 @@ class OrderController extends Controller
     die();
   }
 
+  public function getSingleOrder($order_id, $member)
+  {
+    $member_role = $member->className === Customer::class ? 'customer' : 'merchant';
+
+    var_dump('get order detail #' . $order_id . ' from ' . $member_role . ': ' . $member->ID);
+    die();
+  }
+
+  public function getOrders($member)
+  {
+    $orders = $member->orders();
+
+    $orders_list = [];
+    foreach ($orders as $order) {
+      array_push($orders_list, [
+        'id' => $order->ID,
+        'created' => $order->Created,
+        'total' => $order->Total,
+        'status' => $order->Status,
+        'merchant' => [
+          'name' => $order->merchant()->Name,
+          'id' => $order->MerchantID
+        ]
+      ]);
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success get Orders',
+      'orders' => $orders_list
+    ]));
+  }
+
   public function create_order($data, $customer)
   {
     // get ordered product
@@ -172,6 +206,12 @@ class OrderController extends Controller
   public function handleCustomer(HTTPRequest $request, Customer $customer)
   {
     if ($request->isPOST()) return $this->create_order(json_decode($request->getBody()), $customer);
+
+    if ($request->isGET() && $request->param('id')) return $this->getSingleOrder($request->param('id'), $customer);
+
+    if ($request->isGET()) return $this->getOrders($customer);
+
+
 
     // cek verb 
     // jika get tanpa id 
