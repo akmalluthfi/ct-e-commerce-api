@@ -21,4 +21,15 @@ class Order extends DataObject
   private static $has_many = [
     'OrderDetails' => OrderDetail::class //order per product
   ];
+
+  public function getStatus()
+  {
+    if ($this->record['Status'] === 0) {
+      return 'Pending';
+    } else if ($this->record['Status'] === 1) {
+      return 'Accepted';
+    } else if ($this->record['Status'] === 2) {
+      return 'Rejected';
+    }
+  }
 }

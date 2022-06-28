@@ -8,7 +8,6 @@ use SilverStripe\Assets\Image;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Security\Member;
-use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\ReadonlyField;
 
 class Customer extends Member

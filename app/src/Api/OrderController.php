@@ -86,10 +86,60 @@ class OrderController extends Controller
 
   public function getSingleOrder($order_id, $member)
   {
-    $member_role = $member->className === Customer::class ? 'customer' : 'merchant';
+    // get order
+    $order = Order::get_by_id($order_id);
+    // handle if order doesn't match
+    if (!$order) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 404,
+      'message' => 'Order Not Found!',
+    ]));
 
-    var_dump('get order detail #' . $order_id . ' from ' . $member_role . ': ' . $member->ID);
-    die();
+    // collect basic data order
+    $data = [
+      'id' => $order->ID,
+      'created' => $order->Created,
+      'total' => $order->Total,
+      'status' => $order->getStatus(),
+    ];
+
+    // get data product 
+    $order_products = [];
+    foreach ($order->orderDetails() as $order_detail) {
+      array_push($order_products, [
+        'id' => $order_detail->product()->ID,
+        'name' => $order_detail->product()->Title,
+        'price' => $order_detail->product()->Price,
+        'subTotal' => $order_detail->SubTotal,
+        'quantity' => $order_detail->Quantity
+      ]);
+    }
+
+    // getdata customer
+    $customer = [
+      'id' => $order->customer()->ID,
+      'name' => $order->customer()->name(),
+      'email' => $order->customer()->Email,
+    ];
+
+    // get data merchant
+    $merchant = [
+      'id' => $order->merchant()->ID,
+      'name' => $order->merchant()->Name,
+      'email' => $order->merchant()->Email
+    ];
+
+    // combine all data
+    $data['customer'] = $customer;
+    $data['merchant'] = $merchant;
+    $data['products'] = $order_products;
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success get detail order',
+      'order' => $data
+    ]));
   }
 
   public function getOrders($member)
@@ -102,7 +152,7 @@ class OrderController extends Controller
         'id' => $order->ID,
         'created' => $order->Created,
         'total' => $order->Total,
-        'status' => $order->Status,
+        'status' => $order->getStatus(),
         'merchant' => [
           'name' => $order->merchant()->Name,
           'id' => $order->MerchantID
