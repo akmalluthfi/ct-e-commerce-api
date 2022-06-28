@@ -8,6 +8,7 @@ use Firebase\JWT\Key;
 use SilverStripe\Core\Environment;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Security\Member;
 
 class OrderController extends Controller
 {
@@ -64,36 +65,122 @@ class OrderController extends Controller
       ]));
     }
 
-    // cek apakah method yang digunakan adalah put 
-    if ($request->isPUT()) {
-      // jika valid, cek apakah itu milik customer 
-      $merchant = Merchant::get_by_id($decoded->id);
+    $member = Member::get_by_id($decoded->id);
 
-      if (is_null($merchant)) return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 403,
-        'message' => 'Forbidden',
-      ]));
+    if ($member->ClassName === Merchant::class) return $this->handleMerchant($request, $member);
 
-      // cek apakah ada id yang dikirimkan 
-      if (
-        is_numeric($request->param('id')) &&
-        $request->param('resource') === 'status'
-      ) return $this->confirm_order($request, $merchant);
-    }
-
-    // jika valid, cek apakah itu milik customer 
-    $customer = Customer::get_by_id($decoded->id);
-
-    if (is_null($customer)) return $this->getResponse()->setBody(json_encode([
-      'success' => false,
-      'code' => 403,
-      'message' => 'Forbidden',
-    ]));
-
-    if ($request->isPOST()) return $this->create_order($customer);
+    if ($member->ClassName === Customer::class) return $this->handleCustomer($request, $member);
 
     return $this->httpError(404);
+  }
+
+  public function handleMerchant(HTTPRequest $request, Merchant $merchant)
+  {
+    // cek verb apa yang dipakai 
+    // jika put maka ubah order status 
+    // jika get maka ambil semua order milik merchant 
+    // jika get dengan id maka ambil order detail milik merchant 
+    var_dump('merchant');
+    die();
+  }
+
+  public function create_order($data, $customer)
+  {
+    // get ordered product
+    $products =  Product::get()->filter('ID', array_column($data, 'id'));
+
+    // get merchant from first product 
+    $merchant = $products[0]->merchant()->toMap();
+
+    // check if product has same merchant
+    $diff_merchant_id = $products->filter('MerchantID:not', $merchant['ID']);
+    if ($diff_merchant_id->exists()) return $this->getResponse()->setBody(json_encode([
+      'success' => false,
+      'code' => 400,
+      'message' => 'Bad Request: Cannot checkout products from different merchant',
+    ]));
+
+    // change object to array
+    $ordered_products = $products->toNestedArray();
+
+    // calculate total product
+    $total = 0;
+    foreach ($ordered_products as $key => $product) {
+      $subTotal = $product['Price'] * $data[$key]->quantity;
+      $total += $subTotal;
+      // add new key 
+      $ordered_products[$key]['quantity'] = $data[$key]->quantity;
+      $ordered_products[$key]['subTotal'] = $subTotal;
+      // remove unnecessary key
+      unset($ordered_products[$key]['MerchantID']);
+      unset($ordered_products[$key]['ClassName']);
+      unset($ordered_products[$key]['RecordClassName']);
+      unset($ordered_products[$key]['Created']);
+      unset($ordered_products[$key]['LastEdited']);
+    }
+
+    // create order
+    $order = Order::create();
+    $order->Total = $total;
+    $order->CustomerID = $customer->ID;
+    $order->MerchantID = $merchant['ID'];
+    $order->Status = 0;
+
+    try {
+      $order_id = $order->write();
+
+      // create order details
+      foreach ($ordered_products as $product) {
+        $order_detail = OrderDetail::create();
+
+        $order_detail->SubTotal = $product['subTotal'];
+        $order_detail->Quantity = $product['quantity'];
+        $order_detail->ProductID = $product['ID'];
+        $order_detail->OrderID = 0;
+        $order_detail->OrderID = $order_id;
+
+        $order_detail->write();
+      }
+
+      // delete product in cart
+      foreach ($customer->carts()->filter('ProductID', array_column($data, 'id')) as $product_cart) {
+        $product_cart->delete();
+      }
+
+      // send email confirmation
+      EmailHelper::sendOrderConfirmation($merchant['Email'], [
+        'product' => $ordered_products,
+        'total' => $total,
+        'merchant' => $merchant
+      ]);
+
+      // return success
+      return $this->getResponse()->setBody(json_encode([
+        'success' => true,
+        'code' => 200,
+        'message' => 'Order created successfully',
+      ]));
+    } catch (\Exception $e) {
+      return $this->getResponse()->setBody(json_encode([
+        'success' => false,
+        'code' => 400,
+        'message' => 'Something went wrong : ' . $e->getMessage(),
+      ]));
+    }
+  }
+
+  public function handleCustomer(HTTPRequest $request, Customer $customer)
+  {
+    if ($request->isPOST()) return $this->create_order(json_decode($request->getBody()), $customer);
+
+    // cek verb 
+    // jika get tanpa id 
+    // maka ambil semua order milik customer 
+    // jika get dengan id 
+    // maka ambil order detail milik customer 
+    // jika post maka create order 
+    var_dump('customer');
+    die();
   }
 
   public function confirm_order(HTTPRequest $request, Merchant $merchant)
@@ -149,97 +236,6 @@ class OrderController extends Controller
         'success' => true,
         'code' => 200,
         'message' => 'Order Accepted',
-      ]));
-    }
-  }
-
-  public function create_order(Customer $customer)
-  {
-    // ambil product yang dicheck di carts user
-    $carts = $customer->carts()->filter([
-      'isChecked' => true,
-      'Product.isAvailable' => true
-    ]);
-
-    // ambil merchant id dari product pertama 
-    $merchant_id = $carts->first()->product()->MerchantID;
-
-    // cek apakah semua product cart dari merchant yang sama,
-    $diff_merchant_id = $carts->filter('Product.MerchantID:not', $merchant_id);
-
-    // jika ada barang dari merchant yang berbeda 
-    if ($diff_merchant_id->exists()) {
-      // return warning: tidak boleh checkout dari merchant yang berbeda
-      return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 400,
-        'message' => 'Bad Request: Cannot checkout products from different merchant',
-      ]));
-    }
-
-    // jika sudah berhasil melewati proses diatas berarti cart sekarang sudah aman 
-    // hitung sub total dari tiap total 
-
-    $product_list = [];
-    foreach ($carts as $cart) {
-      array_push($product_list, [
-        'product_id' => $cart->ProductID,
-        'quantity' => $cart->Quantity,
-        'merchant_email' => $cart->product()->merchant()->Email,
-        'product_name' => $cart->product()->Title,
-        'price' => $cart->product()->Price,
-        'sub_total' => $cart->Quantity * $cart->product()->Price
-      ]);
-    }
-
-    $total = array_reduce($product_list, function ($curr, $item) {
-      $curr += $item['sub_total'];
-      return $curr;
-    });
-
-    $order = Order::create();
-    $order->Total = $total;
-    $order->CustomerID = $customer->ID;
-    $order->MerchantID = $merchant_id;
-    $order->Status = 0;
-
-    try {
-      $order_id = $order->write();
-      // $order_id = 0;
-
-      // tambahkan tiap tiap product ke order list 
-      foreach ($product_list as $product) {
-        $order_detail = OrderDetail::create();
-
-        $order_detail->SubTotal = $product['sub_total'];
-        $order_detail->Quantity = $product['quantity'];
-        $order_detail->ProductID = $product['product_id'];
-        $order_detail->OrderID = $order_id;
-
-        $order_detail->write();
-      }
-
-      // kirim email confirmation
-      EmailHelper::sendOrderConfirmation($product_list[0]['merchant_email'], [
-        'product' => $product_list,
-        'total' => $total,
-      ]);
-
-      // jika berhasil delete product didalam cart
-      foreach ($carts as $cart) {
-        $cart->delete();
-      }
-
-      return $this->getResponse()->setBody(json_encode([
-        'success' => true,
-        'code' => 200,
-        'message' => 'Order created successfully',
-      ]));
-    } catch (\Exception $e) {
-      return $this->getResponse()->setBody(json_encode([
-        'success' => false,
-        'code' => 400,
-        'message' => 'Something went wrong : ' . $e->getMessage(),
       ]));
     }
   }
