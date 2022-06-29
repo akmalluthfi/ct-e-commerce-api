@@ -111,7 +111,8 @@ class OrderController extends Controller
         'name' => $order_detail->product()->Title,
         'price' => $order_detail->product()->Price,
         'subTotal' => $order_detail->SubTotal,
-        'quantity' => $order_detail->Quantity
+        'quantity' => $order_detail->Quantity,
+        'product_url' => $order_detail->product()->getFirstImage(),
       ]);
     }
 

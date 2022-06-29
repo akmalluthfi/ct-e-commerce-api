@@ -42,6 +42,11 @@ class Product extends DataObject
     'isAvailable' => 'isAvailable'
   ];
 
+  public function getFirstImage()
+  {
+    return $this->Images()->first()->absoluteLink();
+  }
+
   public function getCMSFields()
   {
     $fields = FieldList::create(TabSet::create('Root'));
