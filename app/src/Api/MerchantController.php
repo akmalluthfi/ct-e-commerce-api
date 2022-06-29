@@ -23,6 +23,7 @@ class MerchantController extends Controller
   {
     parent::init();
     $this->getResponse()->addHeader("Content-type", "application/json");
+    $this->getResponse()->addHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     $this->getResponse()->addHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, x-api-key, access-token');
     $this->getResponse()->addHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, POST');
 
@@ -74,6 +75,9 @@ class MerchantController extends Controller
       $id = $request->param('action');
       $field = $request->param('field');
 
+      // jika id adalah categories 
+      if ($id === 'categories') return $this->getMerchantCategories();
+
       // jika tidak ada param 
       if (is_null($id) && is_null($field)) return $this->getAllMerchants($request);
 
@@ -98,6 +102,26 @@ class MerchantController extends Controller
     }
 
     return $this->httpError(404);
+  }
+
+  public function getMerchantCategories()
+  {
+    $categories = MerchantCategory::get();
+
+    $data = [];
+    foreach ($categories as $category) {
+      array_push($data, [
+        'id' => $category->ID,
+        'name' => $category->Name,
+      ]);
+    }
+
+    return $this->getResponse()->setBody(json_encode([
+      'success' => true,
+      'code' => 200,
+      'message' => 'Success get merchant categories',
+      'categories' => $data
+    ]));
   }
 
   public function getAllMerchants(HTTPRequest $request)
