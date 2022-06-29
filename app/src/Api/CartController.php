@@ -191,17 +191,20 @@ class CartController extends Controller
       'products' => []
     ];
 
+    $products = [];
     foreach ($customer->carts() as $cart) {
-      array_push($resource['products'], [
+      array_push($products, [
         'product_id' => $cart->ProductID,
         'quantity' => $cart->Quantity,
         'is_checked' => $cart->isChecked,
         'is_available' => $cart->product()->isAvailable,
         'product_name' => $cart->product()->Title,
         'product_price' => $cart->product()->Price,
+        'product_url' => $cart->product()->getFirstImage(),
         'merchant' => [
           'name' => $cart->product()->merchant()->FirstName,
           'picture' => $cart->product()->merchant()->Picture()->AbsoluteLink(),
+          'category' => $cart->product()->merchant()->category()->Name,
         ]
       ]);
     }
@@ -210,7 +213,7 @@ class CartController extends Controller
       'success' => true,
       'code' => 200,
       'message' => 'Success get all products in customer cart',
-      'data' => $resource
+      'products' => $products
     ]));
   }
 
