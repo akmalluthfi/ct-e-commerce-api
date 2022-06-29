@@ -16,4 +16,5 @@ SilverStripe\Control\Director:
     'api/verify/$token': 'Api\VerifyController'
     'api/password_reset/$token': 'Api\ResetPasswordController'
     'api/change_email/$token': 'Api\ChangeEmailController'
+    'api/banners': 'Api\BannerController'
     'api/test/$id': 'Api\TestController'
